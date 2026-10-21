@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fuel Route Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; }
+    #map { position: absolute; inset: 0; }
+    #panel {
+      position: absolute; z-index: 1000; top: 12px; right: 12px; width: 320px; max-height: calc(100% - 24px);
+      overflow: auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,.2); padding: 14px;
+    }
+    #panel form { display: grid; gap: 6px; margin-bottom: 10px; }
+    #panel input, #panel select, #panel button { padding: 6px 8px; font: inherit; }
+    #panel button { background: #1565c0; color: #fff; border: 0; border-radius: 4px; cursor: pointer; }
+    .total { font-size: 1.4em; font-weight: 600; }
+    .stop { border-top: 1px solid #eee; padding: 6px 0; font-size: .9em; }
+    .muted { color: #666; font-size: .85em; }
+    .err { color: #b00020; }
+  </style>
+</head>
+<body>
+<div id="map"></div>
+<div id="panel">
+  <form id="f">
+    <input name="start" placeholder="Start, e.g. Chicago, IL" required>
+    <input name="finish" placeholder="Finish, e.g. Houston, TX" required>
+    <select name="start_tank">
+      <option value="empty">Start with empty tank (pay for every mile)</option>
+      <option value="full">Start with full tank</option>
+    </select>
+    <button>Plan route</button>
+  </form>
+  <div id="out" class="muted">Enter two US locations.</div>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const map = L.map("map").setView([39.5, -98.35], 4);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 18, attribution: "&copy; OpenStreetMap contributors"
+  }).addTo(map);
+  let layer = null;
+  const form = document.getElementById("f"), out = document.getElementById("out");
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+  async function plan(params) {
+    out.textContent = "Planning…";
+    history.replaceState(null, "", "?" + params);
+    const res = await fetch("/api/route/?" + params);
+    const data = await res.json();
+    if (!res.ok) { out.innerHTML = `<span class="err">${esc(data.error)}</span>`; return; }
+
+    if (layer) layer.remove();
+    layer = L.geoJSON(data.map.geojson, {
+      style: { color: "#1565c0", weight: 4 },
+      pointToLayer: (f, latlng) => {
+        const p = f.properties;
+        if (p.kind === "fuel_stop") {
+          return L.marker(latlng, { icon: L.divIcon({
+            className: "", html: `<div style="background:#e65100;color:#fff;border-radius:50%;width:24px;height:24px;
+              display:grid;place-items:center;font-weight:700;border:2px solid #fff">${p.stop}</div>` }) })
+            .bindPopup(`<b>${esc(p.name)}</b><br>${esc(p.address)}<br>${esc(p.city)}, ${esc(p.state)}<br>
+              $${p.price_per_gallon}/gal · ${p.gallons} gal · <b>$${p.cost_usd}</b><br>mile ${p.route_mile}`);
+        }
+        return L.circleMarker(latlng, { radius: 8, color: p.kind === "start" ? "#2e7d32" : "#c62828", fillOpacity: 1 })
+          .bindPopup(`${p.kind}: ${esc(p.label)}`);
+      }
+    }).addTo(map);
+    map.fitBounds(layer.getBounds(), { paddingTopLeft: [30, 30], paddingBottomRight: [innerWidth > 700 ? 360 : 30, 30] });
+
+    const s = data.summary;
+    out.innerHTML = `
+      <div class="total">$${s.total_fuel_cost_usd.toFixed(2)}</div>
+      <div class="muted">${data.route.distance_miles} mi · ${s.total_gallons} gal · ${s.number_of_stops} stop(s)
+        · ${data.meta.external_api_calls} external API call(s) · ${data.meta.timing_ms.total} ms</div>
+      ${data.fuel_stops.map(p => `<div class="stop"><b>${p.stop}. ${esc(p.name)}</b> — ${esc(p.city)}, ${esc(p.state)}<br>
+        mile ${p.route_mile} · $${p.price_per_gallon}/gal · ${p.gallons} gal · $${p.cost_usd}</div>`).join("")}`;
+  }
+
+  form.addEventListener("submit", e => { e.preventDefault(); plan(new URLSearchParams(new FormData(form))); });
+  const qs = new URLSearchParams(location.search);
+  if (qs.get("start") && qs.get("finish")) {
+    for (const [k, v] of qs) if (form.elements[k]) form.elements[k].value = v;
+    plan(qs);
+  }
+</script>
+</body>
+</html>

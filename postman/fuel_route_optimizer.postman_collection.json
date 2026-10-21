@@ -1,0 +1,244 @@
+{
+  "info": {
+    "name": "Fuel Route Optimizer",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Route + cost-optimal fuel stops across the USA (500 mi range, 10 mpg)."
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000"
+    }
+  ],
+  "item": [
+    {
+      "name": "Chicago -> Los Angeles (GET)",
+      "request": {
+        "method": "GET",
+        "description": "City, ST inputs are geocoded locally: only 1 external call (OSRM).",
+        "url": {
+          "raw": "{{base_url}}/api/route/?start=Chicago, IL&finish=Los Angeles, CA",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "route",
+            ""
+          ],
+          "query": [
+            {
+              "key": "start",
+              "value": "Chicago, IL"
+            },
+            {
+              "key": "finish",
+              "value": "Los Angeles, CA"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "New York -> Miami (POST, full tank)",
+      "request": {
+        "method": "POST",
+        "description": "",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"start\": \"New York, NY\",\n  \"finish\": \"Miami, FL\",\n  \"start_tank\": \"full\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/route/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "route",
+            ""
+          ]
+        }
+      }
+    },
+    {
+      "name": "Seattle -> Boston (coast to coast)",
+      "request": {
+        "method": "GET",
+        "description": "",
+        "url": {
+          "raw": "{{base_url}}/api/route/?start=Seattle, WA&finish=Boston, MA",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "route",
+            ""
+          ],
+          "query": [
+            {
+              "key": "start",
+              "value": "Seattle, WA"
+            },
+            {
+              "key": "finish",
+              "value": "Boston, MA"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Street address -> city",
+      "request": {
+        "method": "GET",
+        "description": "Addresses fall back to Nominatim (1 extra call).",
+        "url": {
+          "raw": "{{base_url}}/api/route/?start=1600 Pennsylvania Ave NW, Washington, DC&finish=Nashville, TN",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "route",
+            ""
+          ],
+          "query": [
+            {
+              "key": "start",
+              "value": "1600 Pennsylvania Ave NW, Washington, DC"
+            },
+            {
+              "key": "finish",
+              "value": "Nashville, TN"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Coordinates input",
+      "request": {
+        "method": "GET",
+        "description": "",
+        "url": {
+          "raw": "{{base_url}}/api/route/?start=40.7128,-74.0060&finish=41.8781,-87.6298",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "route",
+            ""
+          ],
+          "query": [
+            {
+              "key": "start",
+              "value": "40.7128,-74.0060"
+            },
+            {
+              "key": "finish",
+              "value": "41.8781,-87.6298"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Cheapest possible (no stop penalty)",
+      "request": {
+        "method": "GET",
+        "description": "",
+        "url": {
+          "raw": "{{base_url}}/api/route/?start=Chicago, IL&finish=Los Angeles, CA&stop_penalty=0",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "route",
+            ""
+          ],
+          "query": [
+            {
+              "key": "start",
+              "value": "Chicago, IL"
+            },
+            {
+              "key": "finish",
+              "value": "Los Angeles, CA"
+            },
+            {
+              "key": "stop_penalty",
+              "value": "0"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Error: outside USA",
+      "request": {
+        "method": "GET",
+        "description": "",
+        "url": {
+          "raw": "{{base_url}}/api/route/?start=Toronto, ON&finish=Chicago, IL",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "route",
+            ""
+          ],
+          "query": [
+            {
+              "key": "start",
+              "value": "Toronto, ON"
+            },
+            {
+              "key": "finish",
+              "value": "Chicago, IL"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Error: missing finish",
+      "request": {
+        "method": "GET",
+        "description": "",
+        "url": {
+          "raw": "{{base_url}}/api/route/?start=Chicago, IL",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "route",
+            ""
+          ],
+          "query": [
+            {
+              "key": "start",
+              "value": "Chicago, IL"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
