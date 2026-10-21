@@ -38,8 +38,11 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
   const map = L.map("map").setView([39.5, -98.35], 4);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 18, attribution: "&copy; OpenStreetMap contributors"
+  // OSM's tile usage policy requires a Referer; Django's default "same-origin"
+  // policy would strip it on these cross-origin requests and tiles get blocked.
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19, attribution: "&copy; OpenStreetMap contributors",
+    referrerPolicy: "strict-origin-when-cross-origin"
   }).addTo(map);
   let layer = null;
   const form = document.getElementById("f"), out = document.getElementById("out");

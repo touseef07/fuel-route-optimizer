@@ -129,6 +129,10 @@ MAILERS = {
 }
 
 
+# The map page loads OpenStreetMap tiles, whose usage policy requires a Referer.
+# Send only our origin (not the full URL) to other sites.
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+
 # --- Fuel route planner -----------------------------------------------------
 
 DATA_DIR = BASE_DIR / "data"
